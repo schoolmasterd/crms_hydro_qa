@@ -1,0 +1,150 @@
+CRMS_SITE,IDNUM,FLD_OFFICE,Group Name
+CRMS0490,490,Lafayette,TV.01_GIWW E
+CRMS0551,551,Lafayette,TV.01_GIWW E
+CRMS0489,489,Lafayette,TV.02_E Cote Blanche
+CRMS0496,496,Lafayette,TV.02_E Cote Blanche
+CRMS0517,517,Lafayette,TV.02_E Cote Blanche
+CRMS0544,544,Lafayette,TV.02_E Cote Blanche
+CRMS0488,488,Lafayette,TV.01_GIWW E
+CRMS0513,513,Lafayette,TV.03_TV Inland E
+CRMS0542,542,Lafayette,TV.03_TV Inland E
+CRMS5992,5992,Lafayette,TV.03_TV Inland E
+CRMS0543,543,Lafayette,TV.04_Jaws
+CRMS0545,545,Lafayette,TV.04_Jaws
+CRMS0550,550,Lafayette,TV.04_Jaws
+CRMS0493,493,Lafayette,TV.05_Cypremort
+CRMS0494,494,Lafayette,TV.05_Cypremort
+CRMS0527,527,Lafayette,TV.05_Cypremort
+CRMS0532,532,Lafayette,TV.06_Vermilion Bay
+CRMS0549,549,Lafayette,TV.06_Vermilion Bay
+CRMS1650,1650,Lafayette,TV.06_Vermilion Bay
+CRMS2041,2041,Lafayette,TV.06_Vermilion Bay
+CRMS0511,511,Lafayette,TV.07_TV Inland W
+CRMS0514,514,Lafayette,TV.07_TV Inland W
+CRMS0531,531,Lafayette,TV.07_TV Inland W
+CRMS0552,552,Lafayette,TV.07_TV Inland W
+CRMS0547,547,Lafayette,TV.07_TV Inland W
+CRMS0498,498,Lafayette,TV.08_Marsh Island SE
+CRMS0524,524,Lafayette,TV.08_Marsh Island SE
+CRMS0522,522,Lafayette,TV.08_Marsh Island SE
+CRMS0530,530,Lafayette,TV.08_Marsh Island SE
+CRMS0499,499,Lafayette,TV.09_Marsh Island NW
+CRMS0504,504,Lafayette,TV.09_Marsh Island NW
+CRMS0529,529,Lafayette,TV.09_Marsh Island NW
+CRMS0520,520,Lafayette,TV.09_Marsh Island NW
+CRMS0523,523,Lafayette,TV.09_Marsh Island NW
+CRMS0535,535,Lafayette,TV.10_SW Pass
+CRMS0541,541,Lafayette,TV.10_SW Pass
+CRMS0530,530,Lafayette,TV.10_SW Pass
+CRMS0501,501,Lafayette,TV.11_FWB E
+CRMS0507,507,Lafayette,TV.11_FWB E
+CRMS0508,508,Lafayette,TV.11_FWB E
+CRMS0536,536,Lafayette,TV.11_FWB E
+TV21CR01,TV21CR01,Lafayette,TV.12_Marsh Island TV21
+TV21CR02,TV21CR02,Lafayette,TV.08_TV.21
+CRMS0580,580,Lafayette,ME.01_FWB SW
+CRMS0632,632,Lafayette,ME.01_FWB SW
+CRMS0633,633,Lafayette,ME.01_FWB SW
+CRMS0571,571,Lafayette,ME.02_FWB NW
+CRMS0616,616,Lafayette,ME.02_FWB NW
+CRMS0618,618,Lafayette,ME.02_FWB NW
+CRMS0619,619,Lafayette,ME.02_FWB NW
+CRMS0570,570,Lafayette,ME.03_ME NE
+CRMS0572,572,Lafayette,ME.03_ME NE
+CRMS0565,565,Lafayette,ME.04_White Lake Cons Area
+CRMS0568,568,Lafayette,ME.04_White Lake Cons Area
+CRMS0560,560,Lafayette,ME.04_White Lake Cons Area
+CRMS1277,1277,Lafayette,ME.04_White Lake Cons Area
+CRMS0567,567,Lafayette,ME.05_ME N of GIWW
+CRMS0557,557,Lafayette,ME.05_ME N of GIWW
+CRMS0593,593,Lafayette,ME.05_ME N of GIWW
+CRMS0554,554,Lafayette,ME.06_GL/WL Landbridge
+CRMS0574,574,Lafayette,ME.06_GL/WL Landbridge
+CRMS0595,595,Lafayette,ME.06_GL/WL Landbridge
+CRMS0626,626,Lafayette,ME.07_White Lake S
+CRMS1100,1100,Lafayette,ME.07_White Lake S
+CRMS1130,1130,Lafayette,ME.07_White Lake S
+CRMS0576,576,Lafayette,ME.08_Pecan Island
+CRMS0623,623,Lafayette,ME.08_Pecan Island
+CRMS1965,1965,Lafayette,ME.08_Pecan Island
+CRMS0599,599,Lafayette,ME.09_Rockefeller E
+CRMS0600,600,Lafayette,ME.09_Rockefeller E
+CRMS0609,609,Lafayette,ME.09_Rockefeller E
+CRMS0610,610,Lafayette,ME.09_Rockefeller E
+ME16-06,ME16-06,Lafayette,ME.09_Rockefeller E
+CRMS0581,581,Lafayette,ME.10_Rockefeller W
+CRMS0589,589,Lafayette,ME.10_Rockefeller W
+CRMS0608,608,Lafayette,ME.10_Rockefeller W
+CRMS0614,614,Lafayette,ME.10_Rockefeller W
+CRMS0615,615,Lafayette,ME.10_Rockefeller W
+CRMS0562,562,Lafayette,ME.11_Little Pecan Bayou
+CRMS0603,603,Lafayette,ME.11_Little Pecan Bayou
+CRMS0604,604,Lafayette,ME.11_Little Pecan Bayou
+CRMS0630,630,Lafayette,ME.12_Lower ME River
+CRMS0584,584,Lafayette,ME.12_Lower ME River
+CRMS0588,588,Lafayette,ME.12_Lower ME River
+CRMS0587,587,Lafayette,ME.13_ME SW
+CRMS0622,622,Lafayette,ME.13_ME SW
+CRMS0583,583,Lafayette,ME.14_Humble Canal
+CRMS0605,605,Lafayette,ME.14_Humble Canal
+CRMS0624,624,Lafayette,ME.14_Humble Canal
+CRMS2493,2493,Lafayette,ME.14_Humble Canal
+ME11-01R,ME11-01R,Lafayette,ME.14_Humble Canal
+CRMS0556,556,Lafayette,ME.15_Grand Lake W
+CRMS0590,590,Lafayette,ME.15_Grand Lake W
+CRMS1446,1446,Lafayette,ME.15_Grand Lake W
+CRMS0553,553,Lafayette,ME.16_ME  W
+CRMS1409,1409,Lafayette,ME.16_ME  W
+CRMS1413,1413,Lafayette,ME.16_ME  W
+CRMS0575,575,Lafayette,ME.17_Lacassine and Cam Pr N
+CRMS0691,691,Lafayette,ME.17_Lacassine and Cam Pr N
+CRMS0656,656,Lafayette, CS.01_Calc Lake Rim
+CRMS0685,685,Lafayette, CS.01_Calc Lake Rim
+CRMS0687,687,Lafayette, CS.01_Calc Lake Rim
+CRMS1743,1743,Lafayette, CS.02_Cameron Prairie E
+CRMS0650,650,Lafayette, CS.02_Cameron Prairie E
+CRMS2418,2418,Lafayette, CS.02_Cameron Prairie E
+CRMS0648,648,Lafayette, CS.03_Cameron Prairie E
+CRMS0644,644,Lafayette, CS.03_Cameron Prairie W
+CRMS0645,645,Lafayette, CS.03_Cameron Prairie W
+CRMS1738,1738,Lafayette, CS.03_Cameron Prairie W
+CRMS0655,655,Lafayette, CS.04_Mud Lake
+CRMS0672,672,Lafayette, CS.04_Mud Lake
+CS20-14R,CS20-14R,Lafayette,CS.04_Mud Lake
+CS20-15R,CS20-15R,Lafayette,CS.04_Mud Lake
+CS20-106,CS20-106,Lafayette,CS.04_Mud Lake
+CS59-01,CS59-01,Lafayette,CS.59_Oyster Bayou
+CRMS0651,651,Lafayette, CS.05_CS N
+CRMS6301,6301,Lafayette, CS.05_CS N
+CRMS6302,6302,Lafayette, CS.05_CS N
+CRMS0635,635,Lafayette, CS.06_Sabine E
+CRMS0639,639,Lafayette, CS.06_Sabine E
+CRMS0642,642,Lafayette, CS.06_Sabine E
+CRMS2334,2334,Lafayette, CS.06_Sabine E
+CRMS0638,638,Lafayette, CS.06_Sabine SE
+CRMS0641,641,Lafayette, CS.06_Sabine SE
+CRMS0647,647,Lafayette, CS.07_Sabine SE
+CRMS1858,1858,Lafayette, CS.07_Sabine SE
+CRMS0680,680,Lafayette, CS.08_Holly Beach
+CRMS1838,1838,Lafayette, CS.08_Holly Beach
+CRMS2219,2219,Lafayette, CS.08_Holly Beach
+CRMS0661,661,Lafayette, CS.09_Sabine S
+CRMS0677,677,Lafayette, CS.09_Sabine S
+CRMS0682,682,Lafayette, CS.09_Sabine S
+CRMS1205,1205,Lafayette, CS.09_Sabine S
+CRMS0693,693,Lafayette, CS.10_Sabine Pool
+CRMS0694,694,Lafayette, CS.10_Sabine Pool
+CRMS2154,2154,Lafayette, CS.11_Sabine SW
+CRMS2156,2156,Lafayette, CS.11_Sabine SW
+CRMS0669,669,Lafayette, CS.11_Sabine SW
+CRMS0665,665,Lafayette, CS.11_Sabine SW
+CRMS0660,660,Lafayette, CS.12_Sabine W
+CRMS0683,683,Lafayette, CS.12_Sabine W
+CRMS0684,684,Lafayette, CS.13_Sabine Lake Rim
+CRMS2189,2189,Lafayette, CS.13_Sabine Lake Rim
+CRMS0663,663,Lafayette, CS.14_Black Bayou
+CRMS2166,2166,Lafayette, CS.14_Black Bayou
+CRMS0662,662,Lafayette, CS.14_Black Bayou
+CS27-25,CS27-25,Lafayette,CS.14_Black Bayou
+CRMS0658,658,Lafayette, CS.15_GIWW W
+CRMS0697,697,Lafayette, CS.15_GIWW W
