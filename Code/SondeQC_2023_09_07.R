@@ -95,9 +95,15 @@ legend("bottom",inset =c(0,-.3) ,legend = unlist(sapply(s2p,function(x)paste0(x,
     grp_plts_sal[[i]]<-htmltools::HTML(s())
     dev.off()
   }
-  
-  
-}
+  }
+
+targ_rows<-grep("Requested",dat[,1])
+all_dates<-format(as.Date(dat[,"Date (mm/dd/yyyy)"],format="%m/%d/%Y"),"%m/%d/%Y")
+#get start and stop date-time for subset
+min_date_all<-min(all_dates[targ_rows])
+max_date_all<-max(all_dates[targ_rows])
+time_at_min_date_all<-dat[min(which(all_dates==min_date)),"Time (hh:mm:ss)"]
+time_at_max_date_all<-dat[max(which(all_dates==max_date)),"Time (hh:mm:ss)"]
 
 #### process QA for each station ####
 df<-split.data.frame(dat,f=as.factor(dat[,"Station ID"]))
@@ -106,7 +112,7 @@ df<-split.data.frame(dat,f=as.factor(dat[,"Station ID"]))
 cols<-c("Raw Salinity (ppt)","Adjusted Salinity (ppt)","Raw Water Level (ft)", "Adjusted Water Level (ft)","Adjusted Water Elevation to Datum (ft)", "Adjusted Water Elevation to Marsh (ft)",
         "Raw Specific Conductance (uS/cm)","Adjusted Specific Conductance (uS/cm)","Raw Battery (V)","Adjusted Battery (V)")
 
-
+j=5
 #process data by site
 for(j in 1:length(df)){
 temp_dat<-df[[j]]
@@ -121,8 +127,8 @@ dates<-format(as.Date(temp_dat[,"Date (mm/dd/yyyy)"],format="%m/%d/%Y"),"%m/%d/%
 min_date<-min(dates[target_rows])
 max_date<-max(dates[target_rows])
 
-time_at_min_date<-temp_dat[min(which(dates==min_date)),"Time (hh:mm:ss)"]
-time_at_max_date<-temp_dat[max(which(dates==max_date)),"Time (hh:mm:ss)"]
+time_at_min_date<-temp_dat[min(which(dates[target_rows]==min_date)),"Time (hh:mm:ss)"]
+time_at_max_date<-temp_dat[max(which(dates[target_rows]==max_date)),"Time (hh:mm:ss)"]
 
 #create table 1
 tab_1<-xtable(data.frame(station_name=temp_dat[1,"Station ID"],N=dim(temp_dat[target_rows,])[1],start_date=min_date,
@@ -222,18 +228,18 @@ legend("topright",legend = c("raw","adjusted"),lty=1,col=c("darkgrey","black"),b
 plt_sal_both<-htmltools::HTML(s())
 dev.off()
 
-if(length(who_sal)>0){
-  bad_sals<-temp_dat[who_sal,c("Station ID","Date (mm/dd/yyyy)","Time (hh:mm:ss)","Adjusted Salinity (ppt)")]
-  flg_ind<-as.integer(mean_sal-bad_sals[,4]<0)+1
-  flg<-flag[flg_ind]
-  flg[is.na(flg)]<-"missing"
-  tab_7<-xtable(data.frame(Obs=rownames(bad_sals),Station=bad_sals[,"Station ID"],Date=bad_sals[,"Date (mm/dd/yyyy)"],
-                    Time=bad_sals[,"Time (hh:mm:ss)"],`Adjusted Salinity (ppt)`=bad_sals[,"Adjusted Salinity (ppt)"],Flag=flg,check.names = F),
-                caption = "Extreme Salinities")
-} else {
-  tab_7<-xtable(data.frame(Obs=NA,Station=NA,Date=NA,
-                           Time=NA,`Adjusted Salinity (ppt)`=NA,Flag=NA,check.names = F),caption="Extreme Salinities")
-}
+#if(length(who_sal)>0){
+#  bad_sals<-temp_dat[who_sal,c("Station ID","Date (mm/dd/yyyy)","Time (hh:mm:ss)","Adjusted Salinity (ppt)")]
+#  flg_ind<-as.integer(mean_sal-bad_sals[,4]<0)+1
+#  flg<-flag[flg_ind]
+#  flg[is.na(flg)]<-"missing"
+#  tab_7<-xtable(data.frame(Obs=rownames(bad_sals),Station=bad_sals[,"Station ID"],Date=bad_sals[,"Date (mm/dd/yyyy)"],
+#                    Time=bad_sals[,"Time (hh:mm:ss)"],`Adjusted Salinity (ppt)`=bad_sals[,"Adjusted Salinity (ppt)"],Flag=flg,check.names = F),
+#                caption = "Extreme Salinities")
+#} else {
+#  tab_7<-xtable(data.frame(Obs=NA,Station=NA,Date=NA,
+#                           Time=NA,`Adjusted Salinity (ppt)`=NA,Flag=NA,check.names = F),caption="Extreme Salinities")
+#}
 
 #Adjusted Water Level
 flag<-c("<3sd",">3sd")
@@ -289,6 +295,7 @@ lines(1:len,temp_dat[,cols[4]],col="red")
 lines(1:len,temp_dat[,cols[3]],col="darkgrey")
 marshelev<-sonde_specs$marshelv[which(sonde_specs$`Station ID`==stat_id)]
 abline(h=marshelev,lty=2,lwd=2)
+abline(v=min(which(dates==min_date)),lty=3,lwd=2)
 axis(side = 1,at = seq(1,len,25),labels =dates[seq(1,len,25)],las=2,cex.axis=.75)
 legend("topright",legend = c("raw","adj","adj to datum","marsh elev"),lty=c(1,1,1,2),col=c("darkgrey","red","black","black"),bty='n')
 plt_lvl_all<-htmltools::HTML(s())
@@ -478,7 +485,7 @@ nm_parse_1<-tail(strsplit(in_path,"/")[[1]],1)
 nm_parse_2<-strsplit(nm_parse_1,"\\.")[[1]][1]
 sink(paste0(out_path,"Group graphs ",nm_parse_2,".html"))
 cat(preamb)
-cat(paste0('<h1>',stat_id,' QC (', min_date,' -- ',max_date,')</h1>'),sep = "\n")
+cat(paste0('<h1>',stat_id,' QC (', min_date_all,' -- ',max_date_all,')</h1>'),sep = "\n")
 cat("<h2>Group Graphs Water Elevation</h2>",sep="\n")
   for(k in 1:length(grp_plts_water)){
     cat("<br>")
