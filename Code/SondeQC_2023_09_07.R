@@ -102,8 +102,8 @@ all_dates<-format(as.Date(dat[,"Date (mm/dd/yyyy)"],format="%m/%d/%Y"),"%m/%d/%Y
 #get start and stop date-time for subset
 min_date_all<-min(all_dates[targ_rows])
 max_date_all<-max(all_dates[targ_rows])
-time_at_min_date_all<-dat[min(which(all_dates==min_date)),"Time (hh:mm:ss)"]
-time_at_max_date_all<-dat[max(which(all_dates==max_date)),"Time (hh:mm:ss)"]
+time_at_min_date_all<-dat[min(which(all_dates==min_date_all)),"Time (hh:mm:ss)"]
+time_at_max_date_all<-dat[max(which(all_dates==max_date_all)),"Time (hh:mm:ss)"]
 
 #### process QA for each station ####
 df<-split.data.frame(dat,f=as.factor(dat[,"Station ID"]))
@@ -301,18 +301,18 @@ legend("topright",legend = c("raw","adj","adj to datum","marsh elev"),lty=c(1,1,
 plt_lvl_all<-htmltools::HTML(s())
 dev.off()
 
-if(length(who_wl)>0){
-  bad_wls<-temp_dat[who_wl,c("Station ID","Date (mm/dd/yyyy)","Time (hh:mm:ss)","Adjusted Water Level (ft)")]
-  flg_ind<-as.integer(mean_wl-bad_wls[,4]<0)+1
-  flg<-flag[flg_ind]
-  flg[is.na(flg)]<-"missing"
-  tab_8<-xtable(data.frame(Obs=rownames(bad_wls),Station=bad_wls[,"Station ID"],Date=bad_wls[,"Date (mm/dd/yyyy)"],
-                           Time=bad_wls[,"Time (hh:mm:ss)"],`Adjusted Water Level (ft)`=bad_wls[,"Adjusted Water Level (ft)"],Flag=flg,check.names = F),
-                caption = "Extreme Water Levels")
-} else {
-  tab_8<-xtable(data.frame(Obs=NA,Station=NA,Date=NA,
-                           Time=NA,`Adjusted Water Level (ft)`=NA,Flag=NA,check.names = F),caption="Extreme Water Levels")
-}
+#if(length(who_wl)>0){
+#  bad_wls<-temp_dat[who_wl,c("Station ID","Date (mm/dd/yyyy)","Time (hh:mm:ss)","Adjusted Water Level (ft)")]
+#  flg_ind<-as.integer(mean_wl-bad_wls[,4]<0)+1
+#  flg<-flag[flg_ind]
+#  flg[is.na(flg)]<-"missing"
+#  tab_8<-xtable(data.frame(Obs=rownames(bad_wls),Station=bad_wls[,"Station ID"],Date=bad_wls[,"Date (mm/dd/yyyy)"],
+#                           Time=bad_wls[,"Time (hh:mm:ss)"],`Adjusted Water Level (ft)`=bad_wls[,"Adjusted Water Level (ft)"],Flag=flg,check.names = F),
+#                caption = "Extreme Water Levels")
+#} else {
+#  tab_8<-xtable(data.frame(Obs=NA,Station=NA,Date=NA,
+#                           Time=NA,`Adjusted Water Level (ft)`=NA,Flag=NA,check.names = F),caption="Extreme Water Levels")
+#}
 
 #compare water level adjustment to sonde spec
 wl_adj<-data.frame(`Station ID`=temp_dat[,"Station ID"],diff=temp_dat[,cols[5]]-temp_dat[,cols[4]],check.names = F)
@@ -425,10 +425,10 @@ print(tab_5,type = "html",caption.placement = "top",include.rownames=FALSE,html.
 cat("<br>")
 print(tab_6,type = "html",caption.placement = "top",include.rownames=FALSE,html.table.attributes='')
 cat("<br>")
-print(tab_7,type = "html",caption.placement = "top",include.rownames=FALSE,html.table.attributes='')
-cat("<br>")
-print(tab_8,type = "html",caption.placement = "top",include.rownames=FALSE,html.table.attributes='')
-cat("<br>")
+#print(tab_7,type = "html",caption.placement = "top",include.rownames=FALSE,html.table.attributes='')
+#cat("<br>")
+#print(tab_8,type = "html",caption.placement = "top",include.rownames=FALSE,html.table.attributes='')
+#cat("<br>")
 print(tab_9,type = "html",caption.placement = "top",include.rownames=FALSE,html.table.attributes='')
 cat("<br>")
 print(tab_10,type = "html",caption.placement = "top",include.rownames=FALSE,html.table.attributes='')
