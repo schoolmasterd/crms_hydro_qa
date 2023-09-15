@@ -112,7 +112,7 @@ df<-split.data.frame(dat,f=as.factor(dat[,"Station ID"]))
 cols<-c("Raw Salinity (ppt)","Adjusted Salinity (ppt)","Raw Water Level (ft)", "Adjusted Water Level (ft)","Adjusted Water Elevation to Datum (ft)", "Adjusted Water Elevation to Marsh (ft)",
         "Raw Specific Conductance (uS/cm)","Adjusted Specific Conductance (uS/cm)","Raw Battery (V)","Adjusted Battery (V)")
 
-j=5
+j=1
 #process data by site
 for(j in 1:length(df)){
 temp_dat<-df[[j]]
@@ -127,8 +127,8 @@ dates<-format(as.Date(temp_dat[,"Date (mm/dd/yyyy)"],format="%m/%d/%Y"),"%m/%d/%
 min_date<-min(dates[target_rows])
 max_date<-max(dates[target_rows])
 
-time_at_min_date<-temp_dat[min(which(dates[target_rows]==min_date)),"Time (hh:mm:ss)"]
-time_at_max_date<-temp_dat[max(which(dates[target_rows]==max_date)),"Time (hh:mm:ss)"]
+time_at_min_date<-temp_dat[target_rows[min(which(dates[target_rows]==min_date))],"Time (hh:mm:ss)"]
+time_at_max_date<-temp_dat[target_rows[max(which(dates[target_rows]==max_date))],"Time (hh:mm:ss)"]
 
 #create table 1
 tab_1<-xtable(data.frame(station_name=temp_dat[1,"Station ID"],N=dim(temp_dat[target_rows,])[1],start_date=min_date,
@@ -168,21 +168,23 @@ if(length(who)>0){
 
 # check of shifts between raw and adjusted specific conductance and water levels
 #specific conductance shift
+first_target_row<-target_rows[1]
+last_target_row<-tail(target_rows,1)
 
-tab_5<-xtable(data.frame(date=c(temp_dat[min(which(dates==min_date)),"Date (mm/dd/yyyy)"],temp_dat[len,"Date (mm/dd/yyyy)"]),
-           `Raw Specific Conductance (uS/cm)`=c(temp_dat[min(which(dates==min_date)),cols[7]],temp_dat[len,cols[7]]),
-           `Adjusted Specific Conductance (uS/cm)`=c(temp_dat[min(which(dates==min_date)),cols[8]],temp_dat[len,cols[8]]),
-           diff.sp.con=c(temp_dat[min(which(dates==min_date)),cols[8]]-temp_dat[min(which(dates==min_date)),cols[7]],temp_dat[len,cols[8]]-temp_dat[len,cols[7]]),
-           pct.diff.sp.con=c((temp_dat[min(which(dates==min_date)),cols[7]]-temp_dat[min(which(dates==min_date)),cols[7]])/(temp_dat[min(which(dates==min_date)),cols[8]]+1e-6),
-                             (temp_dat[len,cols[8]]-temp_dat[len,cols[7]])/(temp_dat[len,cols[8]]+1e-6)),check.names = F),caption = "Specific Conductance Shifts")
+tab_5<-xtable(data.frame(date=c(temp_dat[first_target_row,"Date (mm/dd/yyyy)"],temp_dat[last_target_row,"Date (mm/dd/yyyy)"]),
+           `Raw Specific Conductance (uS/cm)`=c(temp_dat[first_target_row,cols[7]],temp_dat[last_target_row,cols[7]]),
+           `Adjusted Specific Conductance (uS/cm)`=c(temp_dat[first_target_row,cols[8]],temp_dat[last_target_row,cols[8]]),
+           diff.sp.con=c(temp_dat[first_target_row,cols[8]]-temp_dat[first_target_row,cols[7]],temp_dat[last_target_row,cols[8]]-temp_dat[last_target_row,cols[7]]),
+           pct.diff.sp.con=c((temp_dat[first_target_row,cols[7]]-temp_dat[first_target_row,cols[7]])/(temp_dat[first_target_row,cols[8]]+1e-6),
+                             (temp_dat[last_target_row,cols[8]]-temp_dat[last_target_row,cols[7]])/(temp_dat[last_target_row,cols[8]]+1e-6)),check.names = F),caption = "Specific Conductance Shifts")
 
 #water level shift
-tab_6<-xtable(data.frame(date=c(temp_dat[min(which(dates==min_date)),"Date (mm/dd/yyyy)"],temp_dat[len,"Date (mm/dd/yyyy)"]),
-          `Raw Water Level (ft)`=c(temp_dat[min(which(dates==min_date)),cols[3]],temp_dat[len,cols[3]]),
-          `Adjusted Water Level (ft)`=c(temp_dat[min(which(dates==min_date)),cols[4]],temp_dat[len,cols[4]]),
-           diff.wl=c(temp_dat[min(which(dates==min_date)),cols[4]]-temp_dat[min(which(dates==min_date)),cols[3]],temp_dat[len,cols[4]]-temp_dat[len,cols[3]]),
-           pct.diff.wl=c((temp_dat[min(which(dates==min_date)),cols[4]]-temp_dat[min(which(dates==min_date)),cols[3]])/(temp_dat[min(which(dates==min_date)),cols[4]]+1e-3),
-                             (temp_dat[len,cols[4]]-temp_dat[len,cols[3]])/(temp_dat[len,cols[4]]+1e-3)),check.names = F),caption = "Water Level Shifts")
+tab_6<-xtable(data.frame(date=c(temp_dat[first_target_row,"Date (mm/dd/yyyy)"],temp_dat[last_target_row,"Date (mm/dd/yyyy)"]),
+          `Raw Water Level (ft)`=c(temp_dat[first_target_row,cols[3]],temp_dat[last_target_row,cols[3]]),
+          `Adjusted Water Level (ft)`=c(temp_dat[first_target_row,cols[4]],temp_dat[last_target_row,cols[4]]),
+           diff.wl=c(temp_dat[first_target_row,cols[4]]-temp_dat[first_target_row,cols[3]],temp_dat[last_target_row,cols[4]]-temp_dat[last_target_row,cols[3]]),
+           pct.diff.wl=c((temp_dat[first_target_row,cols[4]]-temp_dat[first_target_row,cols[3]])/(temp_dat[first_target_row,cols[4]]+1e-3),
+                             (temp_dat[last_target_row,cols[4]]-temp_dat[last_target_row,cols[3]])/(temp_dat[last_target_row,cols[4]]+1e-3)),check.names = F),caption = "Water Level Shifts")
 
 #find values <> 3sd of mean for Adjusted Salinity and Adjusted Water Level
 flag<-c("<3sd",">3sd")
@@ -404,7 +406,7 @@ dev.off()
 #plot(1:len,temp_dat[,cols[5]],type = "l",xaxt='n',ylab=cols[5],main=stat_id,bty='n',xlab="",col="blue")
 #abline(h=marshelev,lty=2,col="blue")
 #axis(side = 1,at = seq(1,len,25),labels =dates[seq(1,len,25)],las=2,cex.axis=.75)
-#abline(v=min(which(dates==min_date)),lty=3,lwd=2)
+#abline(v=min(which(dates[target_rows]==min_date)),lty=3,lwd=2)
 #legend("topright",c("water elev", "marsh elev"),col = "blue",lty = c(1,2),lwd=2,bty='n')
 #plt_4<-htmltools::HTML(s())
 #dev.off()
@@ -485,7 +487,7 @@ nm_parse_1<-tail(strsplit(in_path,"/")[[1]],1)
 nm_parse_2<-strsplit(nm_parse_1,"\\.")[[1]][1]
 sink(paste0(out_path,"Group graphs ",nm_parse_2,".html"))
 cat(preamb)
-cat(paste0('<h1>',stat_id,' QC (', min_date_all,' -- ',max_date_all,')</h1>'),sep = "\n")
+cat(paste0('<h1>',nm_parse_2,' QC (', min_date_all,' -- ',max_date_all,')</h1>'),sep = "\n")
 cat("<h2>Group Graphs Water Elevation</h2>",sep="\n")
   for(k in 1:length(grp_plts_water)){
     cat("<br>")
