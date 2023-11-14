@@ -1,8 +1,12 @@
 #This script is to do QA on CRMS hydro data
-#input: path to hydro file in .csv format
 
-#output: .pdf file of diagnostic charts and tables for each site represented
-#         in input file
+#place name of file to be QA'd in the the quotes on line 9
+
+path<-"path/to/crms_hydro_qa"
+setwd(path)
+in_path<-"Data/"
+out_path<-"Output/"
+input_file<-"ME July.csv"
 
 #load some useful functions
 library(xtable)
@@ -13,15 +17,6 @@ tool_path<-"Tools/"
 preamb<-paste(readLines(paste0(tool_path,"html_preamble.txt")),collapse = "\n")
 sonde_specs<-read.csv(paste0(tool_path,"SONDEspecs.csv"),check.names = F)
 grps<-read.csv(paste0(tool_path,"groupspecs.csv"),check.names = F)
-
-
-#enter path to input file between the quotes below (this points to a file)
-in_path<-"Data/ME July.csv"
-
-#enter path to desired location for output files (this points to a folder)
-out_path<-"Output/"
-
-
 
 #load the data 
 dat<-read.csv(in_path,check.names = F)
