@@ -2,7 +2,7 @@
 
 #place name of file to be QA'd in the the quotes on line 9
 
-path<-"path/to/crms_hydro_qa"
+path<-"path/to/crms_hydro_qa-main"
 setwd(path)
 in_path<-"Data/"
 out_path<-"Output/"
