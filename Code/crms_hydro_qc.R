@@ -18,6 +18,15 @@ preamb<-paste(readLines(paste0(tool_path,"html_preamble.txt")),collapse = "\n")
 sonde_specs<-read.csv(paste0(tool_path,"SONDEspecs.csv"),check.names = F)
 grps<-read.csv(paste0(tool_path,"groupspecs.csv"),check.names = F)
 
+
+#enter path to input file between the quotes below (this points to a file)
+in_path<-"Data/ME July.csv"
+
+#enter path to desired location for output files (this points to a folder)
+out_path<-"Output/"
+
+
+
 #load the data 
 dat<-read.csv(in_path,check.names = F)
 
@@ -29,37 +38,57 @@ grp_list<-grps[grps$CRMS_SITE%in%station_short_names,"Group Name"]
 names(grp_list)<-grps[grps$CRMS_SITE%in%station_short_names,"CRMS_SITE"]
 sonde_list<-unique(dat[,"Station ID"])
 names(sonde_list)<-station_short_names
+#parse names for output filename
+nm_parse_1<-tail(strsplit(in_path,"/")[[1]],1)
+nm_parse_2<-strsplit(nm_parse_1,"\\.")[[1]][1]
+
+
 grp_iter<-unique(grp_list)
 clrs<-c("#003f5c","#bc5090","#ff6361","#58508d","#ffa600")
+sal_clrs<-c("#fd0c0c","#9d2c3e","#d72d27","#a02f1f","#df705f")
+wat_clrs<-c("#7ebbfc","#3366ff","#1340c8","#0029a3","#1c1d7c")
+
 grp_plts_water<-list()
 grp_plts_sal<-list()
 
 for(i in grp_iter){
   s2p<-sonde_list[names(grp_list[which(grp_list==i)])]
-  dat_2_plt<-dat[which(dat[,"Station ID"]%in%s2p),c(1,2,3,12,18)]
-  dates<-format(as.Date(dat_2_plt[,"Date (mm/dd/yyyy)"],format="%m/%d/%Y"),"%m/%d/%Y")
-  target_rows<-grep("Requested",dat_2_plt$`Data Source`)
-  if(!all(is.na(dat_2_plt$`Adjusted Water Elevation to Datum (ft)`[target_rows]))){
+  dat_2_plt<-dat[which(dat[,"Station ID"]%in%s2p),c(1:4,12,18)]
+  tm_stmp<-apply(dat_2_plt[,c("Date (mm/dd/yyyy)","Time (hh:mm:ss)")],1,paste,collapse=" ")|>strptime(,format="%m/%d/%Y %H:%M:%S")
+  dat_2_plt<-data.frame(dat_2_plt[,-c(3,4)],Timestamp=tm_stmp,check.names = F)
+  #do all lining up and processing
+  splt_dat<-split(dat_2_plt,as.factor(dat_2_plt[,"Station ID"]))
+  len<-length(splt_dat)
+ 
+  for(k in 1:len){
+    target_rows<-grep("Requested",splt_dat[[k]]$`Data Source`)
+    splt_dat[[k]]<-splt_dat[[k]][target_rows,-1]
+  }
+x_dates<-data.frame(Timestamp=unique(do.call("c",lapply(splt_dat,function(x)x$Timestamp))))
+all_water_elev<-do.call("c",lapply(splt_dat,function(x)x$`Adjusted Water Elevation to Datum (ft)`))
+all_salinity<-do.call("c",lapply(splt_dat,function(x)x$`Adjusted Salinity (ppt)`))
+marshelv<-sonde_specs$marshelv[which(sonde_specs$`Station ID`%in%s2p)]
+
+  if(!all(is.na(dat_2_plt$`Adjusted Water Elevation to Datum (ft)`))){
     s <- svgstring()
-  ylims<-range(dat_2_plt$`Adjusted Water Elevation to Datum (ft)`[target_rows],na.rm = T)
-  who<-which(dat_2_plt$`Station ID`==s2p[1])[which(dat_2_plt$`Station ID`==s2p[1])%in%target_rows]
-  marshelv<-sonde_specs$marshelv[which(sonde_specs$`Station ID`==s2p[1])]
+  ylims<-range(c(marshelv,all_water_elev),na.rm = T)*c(.95,1.05)
+  pd<-merge(x_dates,splt_dat[[s2p[1]]],"Timestamp",all.x = T)
   par(mar=c(10.1,4.1,4.1,2.1),xpd=F)
-  plot(1:length(who),dat_2_plt$`Adjusted Water Elevation to Datum (ft)`[who],
+  plot(pd$Timestamp,pd$`Adjusted Water Elevation to Datum (ft)`,
        type = "l",col=clrs[1],ylim = ylims,ylab = "Adjusted Water Elevation to Datum (ft)",bty='n',
        xaxt='n',main=i,xlab='')
-  abline(h=marshelv,lty=2,col=clrs[1])
+  abline(h=marshelv[1],lty=2,col=clrs[1])
   if(length(s2p)>1){
   for(j in 2:length(s2p)){
-    who<-which(dat_2_plt$`Station ID`==s2p[j])[which(dat_2_plt$`Station ID`==s2p[1])%in%target_rows]
-    marshelv<-sonde_specs$marshelv[which(sonde_specs$`Station ID`==s2p[j])]
-    lines(1:length(who),dat_2_plt$`Adjusted Water Elevation to Datum (ft)`[who],col=clrs[j])
-    abline(h=marshelv,lty=2,col=clrs[j])
+    pd<-merge(x_dates,splt_dat[[s2p[j]]],"Timestamp",all.x = T)
+    lines(pd$Timestamp,pd$`Adjusted Water Elevation to Datum (ft)`,col=clrs[j])
+    abline(h=marshelv[j],lty=2,col=clrs[j])
   }}
-    axis(side = 1,at = seq(1,length(who),25),labels =dates[seq(1,length(who),25)],las=2,cex.axis=.75)
+    who<-intersect(grep("(-07\\s)|-15|-22|-30",x_dates$Timestamp),grep("(01:00:00)",x_dates$Timestamp))
+    axis(side = 1,at = x_dates$Timestamp[who],labels =format(x_dates$Timestamp[who],"%m/%d/%Y"),las=2,cex.axis=.75)
     par(xpd=T)
 legend("bottom",inset =c(0,-.3) ,legend = unlist(sapply(s2p,function(x)paste0(x,c("Water","Marsh")))),
-       col=rep(clrs[1:length(s2p)],each=length(s2p)),bty='n',lty=rep(c(1:2),length(s2p)),cex=.75,ncol = length(s2p),lwd=1.5)
+       col=rep(clrs[1:length(s2p)],each=2),bty='n',lty=rep(c(1:2),length(s2p)),cex=.75,ncol = length(s2p),lwd=1.5)
                                                                                                   
      grp_plts_water[[i]]<-htmltools::HTML(s())
      dev.off()  
@@ -68,37 +97,31 @@ legend("bottom",inset =c(0,-.3) ,legend = unlist(sapply(s2p,function(x)paste0(x,
   #salinity group plots
   if(!all(is.na(dat_2_plt$`Adjusted Salinity (ppt)`[target_rows]))){
     s <- svgstring()
-    ylims<-range(dat_2_plt$`Adjusted Salinity (ppt)`[target_rows],na.rm = T)
-    who<-which(dat_2_plt$`Station ID`==s2p[1])[which(dat_2_plt$`Station ID`==s2p[1])%in%target_rows]
-    #marshelv<-sonde_specs$marshelv[which(sonde_specs$`Station ID`==s2p[1])]
+    ylims<-range(all_salinity,na.rm = T)*c(.95,1.05)
+    pd<-merge(x_dates,splt_dat[[s2p[1]]],"Timestamp",all.x = T)
     par(mar=c(10.1,4.1,4.1,2.1),xpd=F)
-    plot(1:length(who),dat_2_plt$`Adjusted Salinity (ppt)`[who],
+    plot(pd$Timestamp,pd$`Adjusted Salinity (ppt)`,
          type = "l",col=clrs[1],ylim = ylims,ylab = "Adjusted Salinity (ppt)",bty='n',
          xaxt='n',main=i,xlab='')
     #abline(h=marshelv,lty=2,col=clrs[1])
     if(length(s2p)>1){
       for(j in 2:length(s2p)){
-        who<-which(dat_2_plt$`Station ID`==s2p[j])[which(dat_2_plt$`Station ID`==s2p[1])%in%target_rows]
-        #marshelv<-sonde_specs$marshelv[which(sonde_specs$`Station ID`==s2p[j])]
-        lines(1:length(who),dat_2_plt$`Adjusted Salinity (ppt)`[who],col=clrs[j])
+        pd<-merge(x_dates,splt_dat[[s2p[j]]],"Timestamp",all.x = T)
+        lines(pd$Timestamp,pd$`Adjusted Salinity (ppt)`,col=clrs[j])
         #abline(h=marshelv,lty=2,col=clrs[j])
       }}
-    axis(side = 1,at = seq(1,length(who),25),labels =dates[seq(1,length(who),25)],las=2,cex.axis=.75)
+    who<-intersect(grep("(-07\\s)|-15|-22|-30",x_dates$Timestamp),grep("(01:00:00)",x_dates$Timestamp))
+    
+    axis(side = 1,at = x_dates$Timestamp[who],labels =format(x_dates$Timestamp[who],"%m/%d/%Y"),las=2,cex.axis=.75)
     par(xpd=T)
     legend("bottom",inset =c(0,-.25) ,legend = s2p,
            col=clrs[1:length(s2p)],bty='n',lty=1,cex=.75,lwd=1.5,horiz = T)
     grp_plts_sal[[i]]<-htmltools::HTML(s())
     dev.off()
   }
-  }
-
-targ_rows<-grep("Requested",dat[,1])
-all_dates<-format(as.Date(dat[,"Date (mm/dd/yyyy)"],format="%m/%d/%Y"),"%m/%d/%Y")
-#get start and stop date-time for subset
-min_date_all<-min(all_dates[targ_rows])
-max_date_all<-max(all_dates[targ_rows])
-time_at_min_date_all<-dat[min(which(all_dates==min_date_all)),"Time (hh:mm:ss)"]
-time_at_max_date_all<-dat[max(which(all_dates==max_date_all)),"Time (hh:mm:ss)"]
+  
+  
+}
 
 #### process QA for each station ####
 df<-split.data.frame(dat,f=as.factor(dat[,"Station ID"]))
@@ -107,7 +130,7 @@ df<-split.data.frame(dat,f=as.factor(dat[,"Station ID"]))
 cols<-c("Raw Salinity (ppt)","Adjusted Salinity (ppt)","Raw Water Level (ft)", "Adjusted Water Level (ft)","Adjusted Water Elevation to Datum (ft)", "Adjusted Water Elevation to Marsh (ft)",
         "Raw Specific Conductance (uS/cm)","Adjusted Specific Conductance (uS/cm)","Raw Battery (V)","Adjusted Battery (V)")
 
-j=1
+
 #process data by site
 for(j in 1:length(df)){
 temp_dat<-df[[j]]
@@ -116,18 +139,21 @@ target_rows<-grep("Requested",temp_dat[,1])
 stat_id<-temp_dat[1,"Station ID"]
 len<-dim(temp_dat)[1]
 #get dates
-dates<-format(as.Date(temp_dat[,"Date (mm/dd/yyyy)"],format="%m/%d/%Y"),"%m/%d/%Y")
+#dates<-format(as.Date(temp_dat[,"Date (mm/dd/yyyy)"],format="%m/%d/%Y"),"%m/%d/%Y")
+tm_stmp<-apply(temp_dat[,c("Date (mm/dd/yyyy)","Time (hh:mm:ss)")],1,paste,collapse=" ")|>strptime(,format="%m/%d/%Y %H:%M:%S")
+
 
 #get start and stop date-time for subset
-min_date<-min(dates[target_rows])
-max_date<-max(dates[target_rows])
+min_date<-min(tm_stmp[target_rows])
+max_date<-max(tm_stmp[target_rows])
 
-time_at_min_date<-temp_dat[target_rows[min(which(dates[target_rows]==min_date))],"Time (hh:mm:ss)"]
-time_at_max_date<-temp_dat[target_rows[max(which(dates[target_rows]==max_date))],"Time (hh:mm:ss)"]
+
+time_at_min_date<-format(min_date,"%H:%M:%S")
+time_at_max_date<-format(max_date,"%H:%M:%S")
 
 #create table 1
-tab_1<-xtable(data.frame(station_name=temp_dat[1,"Station ID"],N=dim(temp_dat[target_rows,])[1],start_date=min_date,
-                  start_time=time_at_min_date,end_date=max_date,end_time=time_at_max_date),caption = " Date Ranges for Data Collected:<br> (N = the total number of readings)")
+tab_1<-xtable(data.frame(station_name=temp_dat[1,"Station ID"],N=dim(temp_dat[target_rows,])[1],start_date=format(min_date,"%m/%d/%Y"),
+                  start_time=time_at_min_date,end_date=format(max_date,"%m/%d/%Y"),end_time=time_at_max_date),caption = " Date Ranges for Data Collected:<br> (N = the total number of readings)")
 
 
 #create table 2
@@ -163,23 +189,27 @@ if(length(who)>0){
 
 # check of shifts between raw and adjusted specific conductance and water levels
 #specific conductance shift
+
+##min_date_pos<-which(tm_stmp==min_date) ##mark for removal
 first_target_row<-target_rows[1]
 last_target_row<-tail(target_rows,1)
 
 tab_5<-xtable(data.frame(date=c(temp_dat[first_target_row,"Date (mm/dd/yyyy)"],temp_dat[last_target_row,"Date (mm/dd/yyyy)"]),
-           `Raw Specific Conductance (uS/cm)`=c(temp_dat[first_target_row,cols[7]],temp_dat[last_target_row,cols[7]]),
-           `Adjusted Specific Conductance (uS/cm)`=c(temp_dat[first_target_row,cols[8]],temp_dat[last_target_row,cols[8]]),
-           diff.sp.con=c(temp_dat[first_target_row,cols[8]]-temp_dat[first_target_row,cols[7]],temp_dat[last_target_row,cols[8]]-temp_dat[last_target_row,cols[7]]),
-           pct.diff.sp.con=c((temp_dat[first_target_row,cols[7]]-temp_dat[first_target_row,cols[7]])/(temp_dat[first_target_row,cols[8]]+1e-6),
-                             (temp_dat[last_target_row,cols[8]]-temp_dat[last_target_row,cols[7]])/(temp_dat[last_target_row,cols[8]]+1e-6)),check.names = F),caption = "Specific Conductance Shifts")
+                         `Raw Specific Conductance (uS/cm)`=c(temp_dat[first_target_row,cols[7]],temp_dat[last_target_row,cols[7]]),
+                         `Adjusted Specific Conductance (uS/cm)`=c(temp_dat[first_target_row,cols[8]],temp_dat[last_target_row,cols[8]]),
+                         diff.sp.con=c(temp_dat[first_target_row,cols[8]]-temp_dat[first_target_row,cols[7]],temp_dat[last_target_row,cols[8]]-temp_dat[last_target_row,cols[7]]),
+                         pct.diff.sp.con=c((temp_dat[first_target_row,cols[7]]-temp_dat[first_target_row,cols[7]])/(temp_dat[first_target_row,cols[8]]+1e-6),
+                                           (temp_dat[last_target_row,cols[8]]-temp_dat[last_target_row,cols[7]])/(temp_dat[last_target_row,cols[8]]+1e-6)),check.names = F),caption = "Specific Conductance Shifts")
+
 
 #water level shift
 tab_6<-xtable(data.frame(date=c(temp_dat[first_target_row,"Date (mm/dd/yyyy)"],temp_dat[last_target_row,"Date (mm/dd/yyyy)"]),
-          `Raw Water Level (ft)`=c(temp_dat[first_target_row,cols[3]],temp_dat[last_target_row,cols[3]]),
-          `Adjusted Water Level (ft)`=c(temp_dat[first_target_row,cols[4]],temp_dat[last_target_row,cols[4]]),
-           diff.wl=c(temp_dat[first_target_row,cols[4]]-temp_dat[first_target_row,cols[3]],temp_dat[last_target_row,cols[4]]-temp_dat[last_target_row,cols[3]]),
-           pct.diff.wl=c((temp_dat[first_target_row,cols[4]]-temp_dat[first_target_row,cols[3]])/(temp_dat[first_target_row,cols[4]]+1e-3),
-                             (temp_dat[last_target_row,cols[4]]-temp_dat[last_target_row,cols[3]])/(temp_dat[last_target_row,cols[4]]+1e-3)),check.names = F),caption = "Water Level Shifts")
+                         `Raw Water Level (ft)`=c(temp_dat[first_target_row,cols[3]],temp_dat[last_target_row,cols[3]]),
+                         `Adjusted Water Level (ft)`=c(temp_dat[first_target_row,cols[4]],temp_dat[last_target_row,cols[4]]),
+                         diff.wl=c(temp_dat[first_target_row,cols[4]]-temp_dat[first_target_row,cols[3]],temp_dat[last_target_row,cols[4]]-temp_dat[last_target_row,cols[3]]),
+                         pct.diff.wl=c((temp_dat[first_target_row,cols[4]]-temp_dat[first_target_row,cols[3]])/(temp_dat[first_target_row,cols[4]]+1e-3),
+                                       (temp_dat[last_target_row,cols[4]]-temp_dat[last_target_row,cols[3]])/(temp_dat[last_target_row,cols[4]]+1e-3)),check.names = F),caption = "Water Level Shifts")
+
 
 #find values <> 3sd of mean for Adjusted Salinity and Adjusted Water Level
 flag<-c("<3sd",">3sd")
@@ -192,21 +222,26 @@ who_sal<-who_sal[who_sal%in%target_rows]
 #raw
 s <- svgstring()
 ylims<-range(c(temp_dat[,cols[1]],temp_dat[,cols[1]]),na.rm = T)*c(.90,1.10)
-plot(1:len,temp_dat[,cols[1]],type = "l",xaxt='n',ylab="Raw Salinity (ppt)",ylim = ylims,main=stat_id,bty='l',xlab="")
-abline(v=min(which(dates==min_date)),lty=3,lwd=2)
-axis(side = 1,at = seq(1,len,25),labels =dates[seq(1,len,25)],las=2,cex.axis=.75)
+
+plot(tm_stmp,temp_dat[,cols[1]],type = "l",ylab="Raw Salinity (ppt)",xaxt='n',ylim = ylims,main=stat_id,bty='l',xlab="",
+     col=sal_clrs[1])
+lines(c(min_date,min_date),c(par()$usr[3],par()$usr[4]))
+who<-intersect(grep("(-07\\s)|-15|-22|-30",tm_stmp),grep("(01:00:00)",tm_stmp))
+axis.POSIXct(side = 1,at = tm_stmp[who],forma="%m/%d/%Y",labels = T,las=2,cex.axis=.75)
 plt_sal_raw<-htmltools::HTML(s())
 dev.off()
 
 #adjusted
 s <- svgstring()
 ylims<-c(min(mean_sal-2.5*sd_sal,.90*min(temp_dat[,cols[2]],na.rm = T),na.rm = T),max(mean_sal+2.5*sd_sal,1.10*max(temp_dat[,cols[2]],na.rm = T),na.rm = T))
-plot(1:len,temp_dat[,cols[2]],type = "l",xaxt='n',ylab="Adjusted Salinity (ppt)",ylim = ylims,main=stat_id,bty='l',xlab="")
-#abline(h=mean_sal,col="blue",lwd=2)
-abline(h=mean_sal+2*sd_sal,col="blue",lwd=2,lty=2)
-abline(h=mean_sal-2*sd_sal,col="blue",lwd=2,lty=2)
-abline(v=min(which(dates==min_date)),lty=3,lwd=2)
-axis(side = 1,at = seq(1,len,25),labels =dates[seq(1,len,25)],las=2,cex.axis=.75)
+plot(tm_stmp,temp_dat[,cols[2]],type = "l",xaxt='n',ylab="Adjusted Salinity (ppt)",
+     ylim = ylims,main=stat_id,bty='l',xlab="",col=sal_clrs[1])
+#abline(h=mean_sal,col="grey",lwd=2)
+abline(h=mean_sal+2*sd_sal,col="grey",lwd=2,lty=2)
+abline(h=mean_sal-2*sd_sal,col="grey",lwd=2,lty=2)
+lines(c(min_date,min_date),c(par()$usr[3],par()$usr[4]),lty=3,lwd=2)
+who<-intersect(grep("(-07\\s)|-15|-22|-30",tm_stmp),grep("(01:00:00)",tm_stmp))
+axis.POSIXct(side = 1,at = tm_stmp[who],forma="%m/%d/%Y",labels = T,las=2,cex.axis=.75)
 #legend("topright",legend = c("raw","adjusted"),lty=1,col=c("darkgrey","black"),bty='n')
 plt_sal_adj<-htmltools::HTML(s())
 dev.off()
@@ -214,29 +249,31 @@ dev.off()
 #raw and adjusted
 s <- svgstring()
 ylims<-c(min(mean_sal-2.5*sd_sal,.90*min(temp_dat[,cols[2]],na.rm = T),na.rm = T),max(mean_sal+2.5*sd_sal,1.10*max(temp_dat[,cols[2]],na.rm = T),na.rm = T))
-plot(1:len,temp_dat[,cols[2]],type = "l",xaxt='n',ylab="Salinity (ppt)",ylim = ylims,main=stat_id,bty='l',xlab="")
-lines(1:len,temp_dat[,cols[1]],col="darkgrey")
-#abline(h=mean_sal,col="blue",lwd=2)
-abline(h=mean_sal+2*sd_sal,col="blue",lwd=2,lty=2)
-abline(h=mean_sal-2*sd_sal,col="blue",lwd=2,lty=2)
-abline(v=min(which(dates==min_date)),lty=3,lwd=2)
-axis(side = 1,at = seq(1,len,25),labels =dates[seq(1,len,25)],las=2,cex.axis=.75)
-legend("topright",legend = c("raw","adjusted"),lty=1,col=c("darkgrey","black"),bty='n')
+plot(tm_stmp,temp_dat[,cols[2]],type = "l",xaxt='n',ylab="Salinity (ppt)",
+     ylim = ylims,main=stat_id,bty='l',xlab="",col=sal_clrs[1])
+lines(tm_stmp,temp_dat[,cols[1]],col=sal_clrs[2])
+#abline(h=mean_sal,col="grey",lwd=2)
+abline(h=mean_sal+2*sd_sal,col="grey",lwd=2,lty=2)
+abline(h=mean_sal-2*sd_sal,col="grey",lwd=2,lty=2)
+lines(c(min_date,min_date),c(par()$usr[3],par()$usr[4]),lty=3,lwd=2)
+who<-intersect(grep("(-07\\s)|-15|-22|-30",tm_stmp),grep("(01:00:00)",tm_stmp))
+axis.POSIXct(side = 1,at = tm_stmp[who],forma="%m/%d/%Y",labels = T,las=2,cex.axis=.75)
+legend("topright",legend = c("raw","adjusted"),lty=1,col=sal_clrs[c(2,1)],bty='n')
 plt_sal_both<-htmltools::HTML(s())
 dev.off()
 
-#if(length(who_sal)>0){
-#  bad_sals<-temp_dat[who_sal,c("Station ID","Date (mm/dd/yyyy)","Time (hh:mm:ss)","Adjusted Salinity (ppt)")]
-#  flg_ind<-as.integer(mean_sal-bad_sals[,4]<0)+1
-#  flg<-flag[flg_ind]
-#  flg[is.na(flg)]<-"missing"
-#  tab_7<-xtable(data.frame(Obs=rownames(bad_sals),Station=bad_sals[,"Station ID"],Date=bad_sals[,"Date (mm/dd/yyyy)"],
-#                    Time=bad_sals[,"Time (hh:mm:ss)"],`Adjusted Salinity (ppt)`=bad_sals[,"Adjusted Salinity (ppt)"],Flag=flg,check.names = F),
-#                caption = "Extreme Salinities")
-#} else {
-#  tab_7<-xtable(data.frame(Obs=NA,Station=NA,Date=NA,
-#                           Time=NA,`Adjusted Salinity (ppt)`=NA,Flag=NA,check.names = F),caption="Extreme Salinities")
-#}
+if(length(who_sal)>0){
+  bad_sals<-temp_dat[who_sal,c("Station ID","Date (mm/dd/yyyy)","Time (hh:mm:ss)","Adjusted Salinity (ppt)")]
+  flg_ind<-as.integer(mean_sal-bad_sals[,4]<0)+1
+  flg<-flag[flg_ind]
+  flg[is.na(flg)]<-"missing"
+  tab_7<-xtable(data.frame(Obs=rownames(bad_sals),Station=bad_sals[,"Station ID"],Date=bad_sals[,"Date (mm/dd/yyyy)"],
+                    Time=bad_sals[,"Time (hh:mm:ss)"],`Adjusted Salinity (ppt)`=bad_sals[,"Adjusted Salinity (ppt)"],Flag=flg,check.names = F),
+                caption = "Extreme Salinities")
+} else {
+  tab_7<-xtable(data.frame(Obs=NA,Station=NA,Date=NA,
+                           Time=NA,`Adjusted Salinity (ppt)`=NA,Flag=NA,check.names = F),caption="Extreme Salinities")
+}
 
 #Adjusted Water Level
 flag<-c("<3sd",">3sd")
@@ -249,9 +286,12 @@ who_wl<-who_wl[who_wl%in%target_rows]
 #raw
 s <- svgstring()
 ylims<-range(c(temp_dat[,cols[3]]),na.rm = T)*c(.90,1.10)
-plot(1:len,temp_dat[,cols[3]],type = "l",xaxt='n',ylim = ylims,ylab="Raw Water Level (ft)",main=stat_id,bty='n',xlab="")
-abline(v=min(which(dates==min_date)),lty=3,lwd=2)
-axis(side = 1,at = seq(1,len,25),labels =dates[seq(1,len,25)],las=2,cex.axis=.75)
+
+plot(tm_stmp,temp_dat[,cols[3]],type = "l",xaxt='n',ylim = ylims,ylab="Raw Water Level (ft)",
+     main=stat_id,bty='n',xlab="",col=wat_clrs[1])
+lines(c(min_date,min_date),c(par()$usr[3],par()$usr[4]),lty=3,lwd=2)
+who<-intersect(grep("(-07\\s)|-15|-22|-30",tm_stmp),grep("(01:00:00)",tm_stmp))
+axis.POSIXct(side = 1,at = tm_stmp[who],forma="%m/%d/%Y",labels = T,las=2,cex.axis=.75)
 plt_lvl_raw<-htmltools::HTML(s())
 dev.off()
 #adjusted to datum
@@ -259,57 +299,63 @@ s <- svgstring()
 mean_wl_d<-mean(temp_dat[target_rows,cols[5]],na.rm = T)
 sd_wl_d<-sd(temp_dat[target_rows,cols[5]],na.rm = T)
 ylims<-c(min(mean_wl_d-2.5*sd_wl_d,.90*min(temp_dat[,cols[5]],na.rm = T),na.rm = T),max(mean_wl_d+2.5*sd_wl_d,1.10*max(temp_dat[,cols[5]],na.rm = T),na.rm = T))
-plot(1:len,temp_dat[,cols[5]],type = "l",xaxt='n',ylim = ylims,ylab="Water Level Adjusted to Datum (ft)",main=stat_id,bty='l',xlab="")
-marshelev<-sonde_specs$marshelv[which(sonde_specs$`Station ID`==stat_id)]
-abline(h=marshelev,lty=2,lwd=2)
-#abline(h=mean_wl_d,col="blue",lwd=2)
-abline(h=mean_wl_d+2*sd_wl_d,col="blue",lwd=2,lty=2)
-abline(h=mean_wl_d-2*sd_wl_d,col="blue",lwd=2,lty=2)
-abline(v=min(which(dates==min_date)),lty=3,lwd=2)
-axis(side = 1,at = seq(1,len,25),labels =dates[seq(1,len,25)],las=2,cex.axis=.75)
-legend("topright",legend = c("adj to datum","marsh elev"),lty=c(1,2),col=c("black","black"),bty='n')
+plot(tm_stmp,temp_dat[,cols[5]],type = "l",xaxt='n',ylim = ylims,ylab="Water Level Adjusted to Datum (ft)",
+     main=stat_id,bty='l',xlab="",col=wat_clrs[1])
+marshelv<-sonde_specs$marshelv[which(sonde_specs$`Station ID`==stat_id)]
+abline(h=marshelv,lty=2,lwd=2,wat_clrs[1])
+#abline(h=mean_wl_d,col="grey",lwd=2)
+abline(h=mean_wl_d+2*sd_wl_d,col="grey",lwd=2,lty=2)
+abline(h=mean_wl_d-2*sd_wl_d,col="grey",lwd=2,lty=2)
+lines(c(min_date,min_date),c(par()$usr[3],par()$usr[4]),lty=3,lwd=2)
+who<-intersect(grep("(-07\\s)|-15|-22|-30",tm_stmp),grep("(01:00:00)",tm_stmp))
+axis.POSIXct(side = 1,at = tm_stmp[who],forma="%m/%d/%Y",labels = T,las=2,cex.axis=.75)
+legend("topright",legend = c("adj to datum","marsh elev"),lty=c(1,2),col=rep(wat_clrs[1],2),bty='n')
 plt_lvl_datum<-htmltools::HTML(s())
 dev.off()
 
 s <- svgstring()
 ylims<-c(min(mean_wl_d-2.5*sd_wl_d,.90*min(c(temp_dat[,cols[5]],temp_dat[,cols[3]]),na.rm = T),na.rm = T),max(mean_wl_d+2.5*sd_wl_d,1.10*max(c(temp_dat[,cols[5]],temp_dat[,cols[3]]),na.rm = T),na.rm = T))
-plot(1:len,temp_dat[,cols[5]],type = "l",xaxt='n',ylim = ylims,ylab="Water Level (ft)",main=stat_id,bty='l',xlab="")
-lines(1:len,temp_dat[,cols[3]],col="darkgrey")
-abline(h=marshelev,lty=2,lwd=2)
-abline(h=mean_wl_d+2*sd_wl_d,col="blue",lwd=2,lty=2)
-abline(h=mean_wl_d-2*sd_wl_d,col="blue",lwd=2,lty=2)
-abline(v=min(which(dates==min_date)),lty=3,lwd=2)
-axis(side = 1,at = seq(1,len,25),labels =dates[seq(1,len,25)],las=2,cex.axis=.75)
-legend("topright",legend = c("raw","adj to datum","marsh elev"),lty=c(1,1,2),col=c("darkgrey","black","black"),bty='n')
+plot(tm_stmp,temp_dat[,cols[5]],type = "l",xaxt='n',ylim = ylims,ylab="Water Level (ft)",
+     main=stat_id,bty='l',xlab="",col=wat_clrs[1])
+lines(tm_stmp,temp_dat[,cols[3]],col=wat_clrs[2])
+abline(h=marshelv,lty=2,lwd=2,col=wat_clrs[1])
+abline(h=mean_wl_d+2*sd_wl_d,col="grey",lwd=2,lty=2)
+abline(h=mean_wl_d-2*sd_wl_d,col="grey",lwd=2,lty=2)
+lines(c(min_date,min_date),c(par()$usr[3],par()$usr[4]),lty=3,lwd=2)
+who<-intersect(grep("(-07\\s)|-15|-22|-30",tm_stmp),grep("(01:00:00)",tm_stmp))
+axis.POSIXct(side = 1,at = tm_stmp[who],forma="%m/%d/%Y",labels = T,las=2,cex.axis=.75)
+legend("topright",legend = c("raw","adj to datum","marsh elev"),lty=c(1,1,2),col=wat_clrs[c(2,1,1)],bty='n')
 plt_lvl_both<-htmltools::HTML(s())
 dev.off()
 
 #all three
 s <- svgstring()
 ylims<-c(min(mean_wl_d-2.5*sd_wl_d,.90*min(c(temp_dat[,cols[5]],temp_dat[,cols[3]]),na.rm = T),na.rm = T),max(mean_wl_d+2.5*sd_wl_d,1.10*max(c(temp_dat[,cols[5]],temp_dat[,cols[3]]),na.rm = T),na.rm = T))
-plot(1:len,temp_dat[,cols[5]],type = "l",xaxt='n',ylim = ylims,ylab="Water Level (ft)",main=stat_id,bty='l',xlab="")
-lines(1:len,temp_dat[,cols[4]],col="red")
-lines(1:len,temp_dat[,cols[3]],col="darkgrey")
+plot(tm_stmp,temp_dat[,cols[5]],type = "l",xaxt='n',ylim = ylims,ylab="Water Level (ft)",
+     main=stat_id,bty='l',xlab="",col=wat_clrs[1])
+lines(tm_stmp,temp_dat[,cols[4]],col=wat_clrs[4])
+lines(tm_stmp,temp_dat[,cols[3]],col=wat_clrs[2])
 marshelev<-sonde_specs$marshelv[which(sonde_specs$`Station ID`==stat_id)]
-abline(h=marshelev,lty=2,lwd=2)
-abline(v=min(which(dates==min_date)),lty=3,lwd=2)
-axis(side = 1,at = seq(1,len,25),labels =dates[seq(1,len,25)],las=2,cex.axis=.75)
-legend("topright",legend = c("raw","adj","adj to datum","marsh elev"),lty=c(1,1,1,2),col=c("darkgrey","red","black","black"),bty='n')
+abline(h=marshelev,lty=2,lwd=2,col=wat_clrs[1])
+lines(c(min_date,min_date),c(par()$usr[3],par()$usr[4]),lty=3,lwd=2)
+who<-intersect(grep("(-07\\s)|-15|-22|-30",tm_stmp),grep("(01:00:00)",tm_stmp))
+axis.POSIXct(side = 1,at = tm_stmp[who],forma="%m/%d/%Y",labels = T,las=2,cex.axis=.75)
+legend("topright",legend = c("raw","adj","adj to datum","marsh elev"),lty=c(1,1,1,2),col=wat_clrs[c(2,3,1,1)],bty='n')
 plt_lvl_all<-htmltools::HTML(s())
 dev.off()
 
-#if(length(who_wl)>0){
-#  bad_wls<-temp_dat[who_wl,c("Station ID","Date (mm/dd/yyyy)","Time (hh:mm:ss)","Adjusted Water Level (ft)")]
-#  flg_ind<-as.integer(mean_wl-bad_wls[,4]<0)+1
-#  flg<-flag[flg_ind]
-#  flg[is.na(flg)]<-"missing"
-#  tab_8<-xtable(data.frame(Obs=rownames(bad_wls),Station=bad_wls[,"Station ID"],Date=bad_wls[,"Date (mm/dd/yyyy)"],
-#                           Time=bad_wls[,"Time (hh:mm:ss)"],`Adjusted Water Level (ft)`=bad_wls[,"Adjusted Water Level (ft)"],Flag=flg,check.names = F),
-#                caption = "Extreme Water Levels")
-#} else {
-#  tab_8<-xtable(data.frame(Obs=NA,Station=NA,Date=NA,
-#                           Time=NA,`Adjusted Water Level (ft)`=NA,Flag=NA,check.names = F),caption="Extreme Water Levels")
-#}
+if(length(who_wl)>0){
+  bad_wls<-temp_dat[who_wl,c("Station ID","Date (mm/dd/yyyy)","Time (hh:mm:ss)","Adjusted Water Level (ft)")]
+  flg_ind<-as.integer(mean_wl-bad_wls[,4]<0)+1
+  flg<-flag[flg_ind]
+  flg[is.na(flg)]<-"missing"
+  tab_8<-xtable(data.frame(Obs=rownames(bad_wls),Station=bad_wls[,"Station ID"],Date=bad_wls[,"Date (mm/dd/yyyy)"],
+                           Time=bad_wls[,"Time (hh:mm:ss)"],`Adjusted Water Level (ft)`=bad_wls[,"Adjusted Water Level (ft)"],Flag=flg,check.names = F),
+                caption = "Extreme Water Levels")
+} else {
+  tab_8<-xtable(data.frame(Obs=NA,Station=NA,Date=NA,
+                           Time=NA,`Adjusted Water Level (ft)`=NA,Flag=NA,check.names = F),caption="Extreme Water Levels")
+}
 
 #compare water level adjustment to sonde spec
 wl_adj<-data.frame(`Station ID`=temp_dat[,"Station ID"],diff=temp_dat[,cols[5]]-temp_dat[,cols[4]],check.names = F)
@@ -380,109 +426,198 @@ if(length(zero_sal_wl)>0){
 s <- svgstring()
 marshelev<-sonde_specs[which(sonde_specs$`Station ID`==stat_id),3]
 par(mar=c(5.1, 4.1, 4.1 ,4.1))
-ylims<-c(min(marshelev,min(temp_dat[,cols[5]],na.rm = T)),max(temp_dat[,cols[5]],na.rm = T))
-plot(1:len,temp_dat[,cols[5]],type = "l",xaxt='n',ylab=cols[5],main=stat_id,bty='l',ylim = ylims,xlab="",col="black")
-abline(h=marshelev,lty=2,col="black")
+ylims<-c(min(marshelev,min(temp_dat[,cols[5]],na.rm = T),na.rm = T),max(temp_dat[,cols[5]],na.rm = T))
+
+plot(tm_stmp,temp_dat[,cols[5]],type = "l",xaxt='n',ylab=cols[5],main=stat_id,bty='l',
+     ylim = ylims,xlab="",col=wat_clrs[1])
+abline(h=marshelev,lty=2,col=wat_clrs[1])
 par(new=T)
 ylims<-c(min(temp_dat[,cols[2]],na.rm = T),max(temp_dat[,cols[2]],na.rm = T))
-plot(1:len,temp_dat[,cols[2]],type = "l",xaxt='n',ylab="",main=stat_id,bty='n',xlab="",yaxt="n",col="#58508d")
+plot(tm_stmp,temp_dat[,cols[2]],type = "l",xaxt='n',ylab="",main=stat_id,bty='n',xlab="",yaxt="n",
+     col=sal_clrs[1])
 p2<-par()$yaxp
 axis(side = 4,at=seq(p2[1],p2[2],length.out=5),labels =seq(p2[1],p2[2],length.out=5))
-axis(side = 1,at = seq(1,len,25),labels =dates[seq(1,len,25)],las=2,cex.axis=.75)
-abline(v=min(which(dates==min_date)),lty=3,lwd=2)
+who<-intersect(grep("(-07\\s)|-15|-22|-30",tm_stmp),grep("(01:00:00)",tm_stmp))
+axis.POSIXct(side = 1,at = tm_stmp[who],forma="%m/%d/%Y",labels = T,las=2,cex.axis=.75)
+lines(c(min_date,min_date),c(par()$usr[3],par()$usr[4]),lty=3,lwd=2)
 mtext(cols[2],side = 4,padj=4)
-legend("topright",legend = c("adj to datum","sal","marsh elev"),lty=c(1,1,2),col = c("black","#58508d","black"),bty='n')
+legend("topright",legend = c("adj to datum","sal","marsh elev"),lty=c(1,1,2),col = c(wat_clrs[1],sal_clrs[1],wat_clrs[1]),bty='n')
 plt_sal_lvl<-htmltools::HTML(s())
 dev.off()
 
 #plot 4
 #s <- svgstring()
 #marshelev<-sonde_specs[which(sonde_specs$`Station ID`==stat_id),3]
-#plot(1:len,temp_dat[,cols[5]],type = "l",xaxt='n',ylab=cols[5],main=stat_id,bty='n',xlab="",col="blue")
-#abline(h=marshelev,lty=2,col="blue")
+#plot(1:len,temp_dat[,cols[5]],type = "l",xaxt='n',ylab=cols[5],main=stat_id,bty='n',xlab="",col="grey")
+#abline(h=marshelev,lty=2,col="grey")
 #axis(side = 1,at = seq(1,len,25),labels =dates[seq(1,len,25)],las=2,cex.axis=.75)
-#abline(v=min(which(dates[target_rows]==min_date)),lty=3,lwd=2)
-#legend("topright",c("water elev", "marsh elev"),col = "blue",lty = c(1,2),lwd=2,bty='n')
+#abline(v=min(which(dates==min_date)),lty=3,lwd=2)
+#legend("topright",c("water elev", "marsh elev"),col = "grey",lty = c(1,2),lwd=2,bty='n')
 #plt_4<-htmltools::HTML(s())
 #dev.off()
 
-#create the html output for each station
-sink(paste0(out_path,stat_id,".html"))
-cat(preamb)
-cat(paste0('<h1>',stat_id,' QC (', min_date,' -- ',max_date,')</h1>'),sep = "\n")
-print(tab_1,type = "html",caption.placement = "top",include.rownames=FALSE,html.table.attributes='')
+#create the html output
+if(j==1) {
+  sink(paste0(out_path, nm_parse_2, ".html"))
+  cat(preamb)
+}
+cat(paste0('<h1>', stat_id, ' QC (', min_date, ' -- ', max_date, ')</h1>'),
+    sep = "\n")
+print(
+  tab_1,
+  type = "html",
+  caption.placement = "top",
+  include.rownames = FALSE,
+  html.table.attributes = ''
+)
 cat("<br>")
-print(tab_2,type = "html",caption.placement = "top",include.rownames=TRUE,html.table.attributes='')
+print(
+  tab_2,
+  type = "html",
+  caption.placement = "top",
+  include.rownames = TRUE,
+  html.table.attributes = ''
+)
 cat("<br>")
-print(tab_3,type = "html",caption.placement = "top",include.rownames=FALSE,html.table.attributes='')
+print(
+  tab_3,
+  type = "html",
+  caption.placement = "top",
+  include.rownames = FALSE,
+  html.table.attributes = ''
+)
 cat("<br>")
-print(tab_4,type = "html",caption.placement = "top",include.rownames=FALSE,html.table.attributes='')
+print(
+  tab_4,
+  type = "html",
+  caption.placement = "top",
+  include.rownames = FALSE,
+  html.table.attributes = ''
+)
 cat("<br>")
-print(tab_5,type = "html",caption.placement = "top",include.rownames=FALSE,html.table.attributes='')
+print(
+  tab_5,
+  type = "html",
+  caption.placement = "top",
+  include.rownames = FALSE,
+  html.table.attributes = ''
+)
 cat("<br>")
-print(tab_6,type = "html",caption.placement = "top",include.rownames=FALSE,html.table.attributes='')
+print(
+  tab_6,
+  type = "html",
+  caption.placement = "top",
+  include.rownames = FALSE,
+  html.table.attributes = ''
+)
 cat("<br>")
-#print(tab_7,type = "html",caption.placement = "top",include.rownames=FALSE,html.table.attributes='')
-#cat("<br>")
-#print(tab_8,type = "html",caption.placement = "top",include.rownames=FALSE,html.table.attributes='')
-#cat("<br>")
-print(tab_9,type = "html",caption.placement = "top",include.rownames=FALSE,html.table.attributes='')
+print(
+  tab_7,
+  type = "html",
+  caption.placement = "top",
+  include.rownames = FALSE,
+  html.table.attributes = ''
+)
 cat("<br>")
-print(tab_10,type = "html",caption.placement = "top",include.rownames=FALSE,html.table.attributes='')
+print(
+  tab_8,
+  type = "html",
+  caption.placement = "top",
+  include.rownames = FALSE,
+  html.table.attributes = ''
+)
 cat("<br>")
-print(tab_11,type = "html",caption.placement = "top",include.rownames=FALSE,html.table.attributes='')
+print(
+  tab_9,
+  type = "html",
+  caption.placement = "top",
+  include.rownames = FALSE,
+  html.table.attributes = ''
+)
 cat("<br>")
-print(tab_12,type = "html",caption.placement = "top",include.rownames=FALSE,html.table.attributes='')
+print(
+  tab_10,
+  type = "html",
+  caption.placement = "top",
+  include.rownames = FALSE,
+  html.table.attributes = ''
+)
 cat("<br>")
-cat("<h2>Raw Salinity</h2>",sep="\n")
-cat("Vertical Line Represents Separation of Data Sets",sep = "\n")
+print(
+  tab_11,
+  type = "html",
+  caption.placement = "top",
+  include.rownames = FALSE,
+  html.table.attributes = ''
+)
+cat("<br>")
+print(
+  tab_12,
+  type = "html",
+  caption.placement = "top",
+  include.rownames = FALSE,
+  html.table.attributes = ''
+)
+cat("<br>")
+cat("<h2>Raw Salinity</h2>", sep = "\n")
+cat("Vertical Line Represents Separation of Data Sets", sep = "\n")
 cat(plt_sal_raw)
 cat("<br>")
-cat("<h2>Adjusted Salinity with +/- 2 stdev of mean</h2>",sep="\n")
-cat("Vertical Line Represents Separation of Data Sets",sep = "\n")
+cat("<h2>Adjusted Salinity with +/- 2 stdev of mean</h2>", sep = "\n")
+cat("Vertical Line Represents Separation of Data Sets", sep = "\n")
 cat(plt_sal_adj)
 cat("<br>")
 
-cat("<h2>Raw and Adjusted Salinity with +/- 2 stdev of mean of Adjusted Salinity</h2>",sep="\n")
-cat("Vertical Line Represents Separation of Data Sets",sep = "\n")
+cat("<h2>Raw and Adjusted Salinity with +/- 2 stdev of mean of Adjusted Salinity</h2>",
+    sep = "\n")
+cat("Vertical Line Represents Separation of Data Sets", sep = "\n")
 cat(plt_sal_both)
 
 cat("<br>")
-cat("<h2>Raw Water Level</h2>",sep="\n")
-cat("Vertical Line Represents Separation of Data Sets",sep = "\n")
+cat("<h2>Raw Water Level</h2>", sep = "\n")
+cat("Vertical Line Represents Separation of Data Sets", sep = "\n")
 cat(plt_lvl_raw)
 
 cat("<br>")
-cat("<h2>Adjusted Water Level to Datum with +/-2 stdev of mean(ft)</h2>",sep="\n")
-cat("Vertical Line Represents Separation of Data Sets",sep = "\n")
+cat("<h2>Adjusted Water Level to Datum with +/-2 stdev of mean(ft)</h2>",
+    sep = "\n")
+cat("Vertical Line Represents Separation of Data Sets", sep = "\n")
 cat(plt_lvl_datum)
 
 cat("<br>")
-cat("<h2>Raw Water Level and Adjusted Water Level to Datum (ft)</h2>",sep="\n")
-cat("Vertical Line Represents Separation of Data Sets",sep = "\n")
+cat("<h2>Raw Water Level and Adjusted Water Level to Datum (ft)</h2>",
+    sep = "\n")
+cat("Vertical Line Represents Separation of Data Sets", sep = "\n")
 cat(plt_lvl_both)
 
 cat("<br>")
-cat("<h2>Raw Water Level, Adjusted Water Level, Adjusted Water Level to Datum, and Marsh Elevation</h2>",sep="\n")
-cat("Vertical Line Represents Separation of Data Sets",sep = "\n")
+cat(
+  "<h2>Raw Water Level, Adjusted Water Level, Adjusted Water Level to Datum, and Marsh Elevation</h2>",
+  sep = "\n"
+)
+cat("Vertical Line Represents Separation of Data Sets", sep = "\n")
 cat(plt_lvl_all)
 
 cat("<br>")
-cat("<h2>Adjusted Water Level to Datum (ft), Adjusted Salinity (ppt), and Marsh Elevation</h2>",sep="\n")
-cat("Vertical Line Represents Separation of Data Sets",sep = "\n")
+cat(
+  "<h2>Adjusted Water Level to Datum (ft), Adjusted Salinity (ppt), and Marsh Elevation</h2>",
+  sep = "\n"
+)
+cat("Vertical Line Represents Separation of Data Sets", sep = "\n")
 cat(plt_sal_lvl)
-cat('</body>
+if (j == length(df)) {
+  cat('</body>
     </html>')
-sink()
+  sink()
+}
 }
 
 #create the group graph document
 #parse in_file to get names for out_file
-nm_parse_1<-tail(strsplit(in_path,"/")[[1]],1)
-nm_parse_2<-strsplit(nm_parse_1,"\\.")[[1]][1]
+
 sink(paste0(out_path,"Group graphs ",nm_parse_2,".html"))
 cat(preamb)
-cat(paste0('<h1>',nm_parse_2,' QC (', min_date_all,' -- ',max_date_all,')</h1>'),sep = "\n")
+cat(paste0('<h1>',nm_parse_2,' QC (', min_date,' -- ',max_date,')</h1>'),sep = "\n")
 cat("<h2>Group Graphs Water Elevation</h2>",sep="\n")
   for(k in 1:length(grp_plts_water)){
     cat("<br>")
