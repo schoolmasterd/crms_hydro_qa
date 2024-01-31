@@ -59,15 +59,16 @@ for(i in grp_iter){
   #do all lining up and processing
   splt_dat<-split(dat_2_plt,as.factor(dat_2_plt[,"Station ID"]))
   len<-length(splt_dat)
- 
+
   for(k in 1:len){
     target_rows<-grep("Requested",splt_dat[[k]]$`Data Source`)
     splt_dat[[k]]<-splt_dat[[k]][target_rows,-1]
   }
-x_dates<-data.frame(Timestamp=unique(do.call("c",lapply(splt_dat,function(x)x$Timestamp))))
-all_water_elev<-do.call("c",lapply(splt_dat,function(x)x$`Adjusted Water Elevation to Datum (ft)`))
-all_salinity<-do.call("c",lapply(splt_dat,function(x)x$`Adjusted Salinity (ppt)`))
-marshelv<-sonde_specs$marshelv[which(sonde_specs$`Station ID`%in%s2p)]
+  x_dates<-data.frame(Timestamp=unique(do.call("c",lapply(splt_dat,function(x)x$Timestamp))))
+  all_water_elev<-do.call("c",lapply(splt_dat,function(x)x$`Adjusted Water Elevation to Datum (ft)`))
+  all_salinity<-do.call("c",lapply(splt_dat,function(x)x$`Adjusted Salinity (ppt)`))
+  
+  marshelv<-sonde_specs$marshelv[which(sonde_specs$`Station ID`%in%s2p)]
 
   if(!all(is.na(dat_2_plt$`Adjusted Water Elevation to Datum (ft)`))){
     s <- svgstring()
@@ -302,7 +303,7 @@ ylims<-c(min(mean_wl_d-2.5*sd_wl_d,.90*min(temp_dat[,cols[5]],na.rm = T),na.rm =
 plot(tm_stmp,temp_dat[,cols[5]],type = "l",xaxt='n',ylim = ylims,ylab="Water Level Adjusted to Datum (ft)",
      main=stat_id,bty='l',xlab="",col=wat_clrs[1])
 marshelv<-sonde_specs$marshelv[which(sonde_specs$`Station ID`==stat_id)]
-abline(h=marshelv,lty=2,lwd=2,wat_clrs[1])
+abline(h=marshelv,lty=2,lwd=2,col=wat_clrs[1])
 #abline(h=mean_wl_d,col="grey",lwd=2)
 abline(h=mean_wl_d+2*sd_wl_d,col="grey",lwd=2,lty=2)
 abline(h=mean_wl_d-2*sd_wl_d,col="grey",lwd=2,lty=2)
