@@ -12,12 +12,10 @@ input_file<-"ME July.csv"
 library(xtable)
 library(svglite)
 
-#enter path to the tools folder used by this script
 tool_path<-"Tools/"
 preamb<-paste(readLines(paste0(tool_path,"html_preamble.txt")),collapse = "\n")
 sonde_specs<-read.csv(paste0(tool_path,"SONDEspecs.csv"),check.names = F)
 grps<-read.csv(paste0(tool_path,"groupspecs.csv"),check.names = F)
-
 
 #enter path to input file between the quotes below (this points to a file)
 in_path<-"Data/ME July.csv"
@@ -38,12 +36,16 @@ grp_list<-grps[grps$CRMS_SITE%in%station_short_names,"Group Name"]
 names(grp_list)<-grps[grps$CRMS_SITE%in%station_short_names,"CRMS_SITE"]
 sonde_list<-unique(dat[,"Station ID"])
 names(sonde_list)<-station_short_names
+
 #parse names for output filename
 nm_parse_1<-tail(strsplit(in_path,"/")[[1]],1)
 nm_parse_2<-strsplit(nm_parse_1,"\\.")[[1]][1]
 
 
 grp_iter<-unique(grp_list)
+#put groups in alpha-numeric order
+grp_iter<-sort(grp_iter)
+
 clrs<-c("#003f5c","#bc5090","#ff6361","#58508d","#ffa600")
 sal_clrs<-c("#fd0c0c","#9d2c3e","#d72d27","#a02f1f","#df705f")
 wat_clrs<-c("#7ebbfc","#3366ff","#1340c8","#0029a3","#1c1d7c")
@@ -60,23 +62,25 @@ for(i in grp_iter){
   splt_dat<-split(dat_2_plt,as.factor(dat_2_plt[,"Station ID"]))
   len<-length(splt_dat)
 
-  for(k in 1:len){
-    target_rows<-grep("Requested",splt_dat[[k]]$`Data Source`)
-    splt_dat[[k]]<-splt_dat[[k]][target_rows,-1]
-  }
+  #for(k in 1:len){
+  #  target_rows<-grep("Requested",splt_dat[[k]]$`Data Source`)
+  #  splt_dat[[k]]<-splt_dat[[k]][target_rows,-1]
+  #}
+  targ_date<-min(grep("Requested",splt_dat[[1]]$`Data Source`))
+  
   x_dates<-data.frame(Timestamp=unique(do.call("c",lapply(splt_dat,function(x)x$Timestamp))))
   all_water_elev<-do.call("c",lapply(splt_dat,function(x)x$`Adjusted Water Elevation to Datum (ft)`))
   all_salinity<-do.call("c",lapply(splt_dat,function(x)x$`Adjusted Salinity (ppt)`))
   
   marshelv<-sonde_specs$marshelv[which(sonde_specs$`Station ID`%in%s2p)]
 
-  if(!all(is.na(dat_2_plt$`Adjusted Water Elevation to Datum (ft)`))){
+  if(any(!is.na(dat_2_plt$`Adjusted Water Elevation to Datum (ft)`))){
     s <- svgstring()
-  ylims<-range(c(marshelv,all_water_elev),na.rm = T)*c(.95,1.05)
+  ylims<-range(c(marshelv,all_water_elev),na.rm = T)*c(.9,1.10)
   pd<-merge(x_dates,splt_dat[[s2p[1]]],"Timestamp",all.x = T)
   par(mar=c(10.1,4.1,4.1,2.1),xpd=F)
   plot(pd$Timestamp,pd$`Adjusted Water Elevation to Datum (ft)`,
-       type = "l",col=clrs[1],ylim = ylims,ylab = "Adjusted Water Elevation to Datum (ft)",bty='n',
+       type = "l",col=clrs[1],ylim = ylims,ylab = "Adjusted Water Elevation to Datum (ft)",bty='l',
        xaxt='n',main=i,xlab='')
   abline(h=marshelv[1],lty=2,col=clrs[1])
   if(length(s2p)>1){
@@ -86,10 +90,11 @@ for(i in grp_iter){
     abline(h=marshelv[j],lty=2,col=clrs[j])
   }}
     who<-intersect(grep("(-07\\s)|-15|-22|-30",x_dates$Timestamp),grep("(01:00:00)",x_dates$Timestamp))
+    lines(c(x_dates$Timestamp[targ_date],x_dates$Timestamp[targ_date]),c(par()$usr[3],par()$usr[4]))
     axis(side = 1,at = x_dates$Timestamp[who],labels =format(x_dates$Timestamp[who],"%m/%d/%Y"),las=2,cex.axis=.75)
     par(xpd=T)
 legend("bottom",inset =c(0,-.3) ,legend = unlist(sapply(s2p,function(x)paste0(x,c("Water","Marsh")))),
-       col=rep(clrs[1:length(s2p)],each=2),bty='n',lty=rep(c(1:2),length(s2p)),cex=.75,ncol = length(s2p),lwd=1.5)
+       col=rep(clrs[1:length(s2p)],each=2),bty='l',lty=rep(c(1:2),length(s2p)),cex=.75,ncol = length(s2p),lwd=1.5)
                                                                                                   
      grp_plts_water[[i]]<-htmltools::HTML(s())
      dev.off()  
@@ -98,11 +103,11 @@ legend("bottom",inset =c(0,-.3) ,legend = unlist(sapply(s2p,function(x)paste0(x,
   #salinity group plots
   if(!all(is.na(dat_2_plt$`Adjusted Salinity (ppt)`[target_rows]))){
     s <- svgstring()
-    ylims<-range(all_salinity,na.rm = T)*c(.95,1.05)
+    ylims<-range(all_salinity,na.rm = T)*c(.90,1.10)
     pd<-merge(x_dates,splt_dat[[s2p[1]]],"Timestamp",all.x = T)
     par(mar=c(10.1,4.1,4.1,2.1),xpd=F)
     plot(pd$Timestamp,pd$`Adjusted Salinity (ppt)`,
-         type = "l",col=clrs[1],ylim = ylims,ylab = "Adjusted Salinity (ppt)",bty='n',
+         type = "l",col=clrs[1],ylim = ylims,ylab = "Adjusted Salinity (ppt)",bty='l',
          xaxt='n',main=i,xlab='')
     #abline(h=marshelv,lty=2,col=clrs[1])
     if(length(s2p)>1){
@@ -112,11 +117,11 @@ legend("bottom",inset =c(0,-.3) ,legend = unlist(sapply(s2p,function(x)paste0(x,
         #abline(h=marshelv,lty=2,col=clrs[j])
       }}
     who<-intersect(grep("(-07\\s)|-15|-22|-30",x_dates$Timestamp),grep("(01:00:00)",x_dates$Timestamp))
-    
+    lines(c(x_dates$Timestamp[targ_date],x_dates$Timestamp[targ_date]),c(par()$usr[3],par()$usr[4]))
     axis(side = 1,at = x_dates$Timestamp[who],labels =format(x_dates$Timestamp[who],"%m/%d/%Y"),las=2,cex.axis=.75)
     par(xpd=T)
     legend("bottom",inset =c(0,-.25) ,legend = s2p,
-           col=clrs[1:length(s2p)],bty='n',lty=1,cex=.75,lwd=1.5,horiz = T)
+           col=clrs[1:length(s2p)],bty='l',lty=1,cex=.75,lwd=1.5,horiz = T)
     grp_plts_sal[[i]]<-htmltools::HTML(s())
     dev.off()
   }
@@ -243,7 +248,7 @@ abline(h=mean_sal-2*sd_sal,col="grey",lwd=2,lty=2)
 lines(c(min_date,min_date),c(par()$usr[3],par()$usr[4]),lty=3,lwd=2)
 who<-intersect(grep("(-07\\s)|-15|-22|-30",tm_stmp),grep("(01:00:00)",tm_stmp))
 axis.POSIXct(side = 1,at = tm_stmp[who],forma="%m/%d/%Y",labels = T,las=2,cex.axis=.75)
-#legend("topright",legend = c("raw","adjusted"),lty=1,col=c("darkgrey","black"),bty='n')
+#legend("topright",legend = c("raw","adjusted"),lty=1,col=c("darkgrey","black"),bty='l')
 plt_sal_adj<-htmltools::HTML(s())
 dev.off()
 
@@ -259,7 +264,7 @@ abline(h=mean_sal-2*sd_sal,col="grey",lwd=2,lty=2)
 lines(c(min_date,min_date),c(par()$usr[3],par()$usr[4]),lty=3,lwd=2)
 who<-intersect(grep("(-07\\s)|-15|-22|-30",tm_stmp),grep("(01:00:00)",tm_stmp))
 axis.POSIXct(side = 1,at = tm_stmp[who],forma="%m/%d/%Y",labels = T,las=2,cex.axis=.75)
-legend("topright",legend = c("raw","adjusted"),lty=1,col=sal_clrs[c(2,1)],bty='n')
+legend("topright",legend = c("raw","adjusted"),lty=1,col=sal_clrs[c(2,1)],bty='l')
 plt_sal_both<-htmltools::HTML(s())
 dev.off()
 
@@ -289,7 +294,7 @@ s <- svgstring()
 ylims<-range(c(temp_dat[,cols[3]]),na.rm = T)*c(.90,1.10)
 
 plot(tm_stmp,temp_dat[,cols[3]],type = "l",xaxt='n',ylim = ylims,ylab="Raw Water Level (ft)",
-     main=stat_id,bty='n',xlab="",col=wat_clrs[1])
+     main=stat_id,bty='l',xlab="",col=wat_clrs[1])
 lines(c(min_date,min_date),c(par()$usr[3],par()$usr[4]),lty=3,lwd=2)
 who<-intersect(grep("(-07\\s)|-15|-22|-30",tm_stmp),grep("(01:00:00)",tm_stmp))
 axis.POSIXct(side = 1,at = tm_stmp[who],forma="%m/%d/%Y",labels = T,las=2,cex.axis=.75)
@@ -310,7 +315,7 @@ abline(h=mean_wl_d-2*sd_wl_d,col="grey",lwd=2,lty=2)
 lines(c(min_date,min_date),c(par()$usr[3],par()$usr[4]),lty=3,lwd=2)
 who<-intersect(grep("(-07\\s)|-15|-22|-30",tm_stmp),grep("(01:00:00)",tm_stmp))
 axis.POSIXct(side = 1,at = tm_stmp[who],forma="%m/%d/%Y",labels = T,las=2,cex.axis=.75)
-legend("topright",legend = c("adj to datum","marsh elev"),lty=c(1,2),col=rep(wat_clrs[1],2),bty='n')
+legend("topright",legend = c("adj to datum","marsh elev"),lty=c(1,2),col=rep(wat_clrs[1],2),bty='l')
 plt_lvl_datum<-htmltools::HTML(s())
 dev.off()
 
@@ -325,7 +330,7 @@ abline(h=mean_wl_d-2*sd_wl_d,col="grey",lwd=2,lty=2)
 lines(c(min_date,min_date),c(par()$usr[3],par()$usr[4]),lty=3,lwd=2)
 who<-intersect(grep("(-07\\s)|-15|-22|-30",tm_stmp),grep("(01:00:00)",tm_stmp))
 axis.POSIXct(side = 1,at = tm_stmp[who],forma="%m/%d/%Y",labels = T,las=2,cex.axis=.75)
-legend("topright",legend = c("raw","adj to datum","marsh elev"),lty=c(1,1,2),col=wat_clrs[c(2,1,1)],bty='n')
+legend("topright",legend = c("raw","adj to datum","marsh elev"),lty=c(1,1,2),col=wat_clrs[c(2,1,1)],bty='l')
 plt_lvl_both<-htmltools::HTML(s())
 dev.off()
 
@@ -341,7 +346,7 @@ abline(h=marshelev,lty=2,lwd=2,col=wat_clrs[1])
 lines(c(min_date,min_date),c(par()$usr[3],par()$usr[4]),lty=3,lwd=2)
 who<-intersect(grep("(-07\\s)|-15|-22|-30",tm_stmp),grep("(01:00:00)",tm_stmp))
 axis.POSIXct(side = 1,at = tm_stmp[who],forma="%m/%d/%Y",labels = T,las=2,cex.axis=.75)
-legend("topright",legend = c("raw","adj","adj to datum","marsh elev"),lty=c(1,1,1,2),col=wat_clrs[c(2,3,1,1)],bty='n')
+legend("topright",legend = c("raw","adj","adj to datum","marsh elev"),lty=c(1,1,1,2),col=wat_clrs[c(2,3,1,1)],bty='l')
 plt_lvl_all<-htmltools::HTML(s())
 dev.off()
 
@@ -434,7 +439,7 @@ plot(tm_stmp,temp_dat[,cols[5]],type = "l",xaxt='n',ylab=cols[5],main=stat_id,bt
 abline(h=marshelev,lty=2,col=wat_clrs[1])
 par(new=T)
 ylims<-c(min(temp_dat[,cols[2]],na.rm = T),max(temp_dat[,cols[2]],na.rm = T))
-plot(tm_stmp,temp_dat[,cols[2]],type = "l",xaxt='n',ylab="",main=stat_id,bty='n',xlab="",yaxt="n",
+plot(tm_stmp,temp_dat[,cols[2]],type = "l",xaxt='n',ylab="",main=stat_id,bty='l',xlab="",yaxt="n",
      col=sal_clrs[1])
 p2<-par()$yaxp
 axis(side = 4,at=seq(p2[1],p2[2],length.out=5),labels =seq(p2[1],p2[2],length.out=5))
@@ -442,18 +447,18 @@ who<-intersect(grep("(-07\\s)|-15|-22|-30",tm_stmp),grep("(01:00:00)",tm_stmp))
 axis.POSIXct(side = 1,at = tm_stmp[who],forma="%m/%d/%Y",labels = T,las=2,cex.axis=.75)
 lines(c(min_date,min_date),c(par()$usr[3],par()$usr[4]),lty=3,lwd=2)
 mtext(cols[2],side = 4,padj=4)
-legend("topright",legend = c("adj to datum","sal","marsh elev"),lty=c(1,1,2),col = c(wat_clrs[1],sal_clrs[1],wat_clrs[1]),bty='n')
+legend("topright",legend = c("adj to datum","sal","marsh elev"),lty=c(1,1,2),col = c(wat_clrs[1],sal_clrs[1],wat_clrs[1]),bty='l')
 plt_sal_lvl<-htmltools::HTML(s())
 dev.off()
 
 #plot 4
 #s <- svgstring()
 #marshelev<-sonde_specs[which(sonde_specs$`Station ID`==stat_id),3]
-#plot(1:len,temp_dat[,cols[5]],type = "l",xaxt='n',ylab=cols[5],main=stat_id,bty='n',xlab="",col="grey")
+#plot(1:len,temp_dat[,cols[5]],type = "l",xaxt='n',ylab=cols[5],main=stat_id,bty='l',xlab="",col="grey")
 #abline(h=marshelev,lty=2,col="grey")
 #axis(side = 1,at = seq(1,len,25),labels =dates[seq(1,len,25)],las=2,cex.axis=.75)
 #abline(v=min(which(dates==min_date)),lty=3,lwd=2)
-#legend("topright",c("water elev", "marsh elev"),col = "grey",lty = c(1,2),lwd=2,bty='n')
+#legend("topright",c("water elev", "marsh elev"),col = "grey",lty = c(1,2),lwd=2,bty='l')
 #plt_4<-htmltools::HTML(s())
 #dev.off()
 
